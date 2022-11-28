@@ -22,6 +22,8 @@ go.work
 
 # other
 nzb
+bin
+*.ps1
 *.txt
 *.yml
 *.zip

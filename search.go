@@ -50,7 +50,7 @@ func search(group string) error {
 	if verbose {
 		fmt.Printf("Scanning group '%s' for the last message to end the search\n", group)
 	}
-	lastMessageID, lastMessageDate, err = scanForDate(conn, firstMessageID, lastMessageID, 2*60*60*24, false)
+	lastMessageID, lastMessageDate, err = scanForDate(conn, firstMessageID, lastMessageID, 0, false)
 	if err != nil {
 		DisconnectNNTP(conn)
 		fmt.Printf("Error while scanning group '%s' for the last message: %v\n", group, err)

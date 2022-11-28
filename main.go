@@ -146,7 +146,7 @@ if set to 'BINARIES' all available alt.binaries.* groups on the usenet server wi
 		if err != nil {
 			fmt.Printf("Error parsing input '%s': %s\n", input, err)
 		} else {
-			days = result
+			days = result + 1 // add back the day which was added above for security to have full length of back search
 		}
 	}
 
