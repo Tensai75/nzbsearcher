@@ -25,5 +25,8 @@
 
 ### Änderungsprotokoll
 
-#### v0.0.1
+#### v0.0.2
+ - fix für exakte Daten
+
+ #### v0.0.1
  - erste öffentliche Version

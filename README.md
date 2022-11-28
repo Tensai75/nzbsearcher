@@ -24,5 +24,9 @@
 
 ### Change log
 
+#### v0.0.2
+ - fix to have accurate dates
+
 #### v0.0.1
  - first public version
+ 
