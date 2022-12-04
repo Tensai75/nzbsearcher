@@ -13,7 +13,7 @@
 
 ### How to use
  Execute the programme 'nzbsearcher' in a command line. You will be prompted for the header you are looking for and the date you assume the file was posted on Usenet.
- If no default information is given in the configuration file, you will also be prompted to enter the full name of the newsgroup(s) to search in and the number of days you want the program to search backwards from the specified date. If several newsgroups are to be searched, the names must be separated by commas.
+ If no default information is given in the configuration file, you will also be prompted to enter the full name of the newsgroup(s) to search in and the number of days you want the program to search backwards from the specified date. If several newsgroups are to be searched, the names must be separated by commas. "alt.binaries." can be abbreviated to "a.b." when entered.
  
  The program will then search all messages in the newsgroup(s) within the specified time period and search the subjects for the specified header. If messages are found, the information is collected and then stored in a corresponding NZB file, either in the same directory as the executable file or in the path specified by the path setting.
  
@@ -23,6 +23,11 @@
  The parsing of the subject should be improved significantly to better take into account all the very different subject formats used for file posts.
 
 ### Change log
+
+#### v0.0.3
+ - allow a.b. instead of alt.binaries.
+ - show parsing erros only with verbose output (parameter: -verbose)
+ - improved parsing of subject 
 
 #### v0.0.2
  - fix to have accurate dates

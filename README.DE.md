@@ -14,7 +14,7 @@
 
 ### Wie verwenden
  Das Programm `nzbsearcher` in einer Befehlszeile ausführen. Es erscheint eine Aufforderung zur Eingabe des gesuchten Header und des Datums, von dem angenommen wird, dass die Datei ins Usenet gepostet wurde.
- Wenn in der Konfigurationsdatei keine Standardinformationen angegeben sind, wird man außerdem aufgefordert, den vollständigen Namen der Newsgruppe(n), in der/denen gesucht werden soll, und die Anzahl der Tage, die das Programm ab dem angegebenen Datum rückwärts suchen soll, einzugeben. Wenn in mehreren Newsgroups gesucht werden soll, müssen die Namen durch Kommata getrennt werden.
+ Wenn in der Konfigurationsdatei keine Standardinformationen angegeben sind, wird man außerdem aufgefordert, den vollständigen Namen der Newsgruppe(n), in der/denen gesucht werden soll, und die Anzahl der Tage, die das Programm ab dem angegebenen Datum rückwärts suchen soll, einzugeben. Wenn in mehreren Newsgroups gesucht werden soll, müssen die Namen durch Kommata getrennt werden. "alt.binaries." kann bei der Eingabe mit "a.b." abgekürzt werden.
  
  Das Programm durchsucht dann alle Nachrichten in der/den Newsgruppe(n) innerhalb des angegebenen Zeitraums und sucht in den Betreffs nach dem angegebenen Header. Wenn Nachrichten gefunden werden, werden die Informationen gesammelt und anschließend in einer entsprechenden NZB-Datei gespeichert, entweder im selben Verzeichnis wie die ausführbare Datei oder in dem durch die Pfadeinstellung angegebenen Pfad.
  
@@ -24,6 +24,11 @@
  Das Parsing des Betreffs sollte noch deutlich verbessert werden, um all die sehr unterschiedlichen Betreff-Formate, die für Dateiposts verwendet werden, besser berücksichtigen zu können.
 
 ### Änderungsprotokoll
+
+#### v0.0.3
+ - a.b. anstelle von alt.binaries. ist nun als Eingabe möglich
+ - Anzeige von Parsing-Fehlern nur bei ausführlicher Ausgabe (Parameter: -verbose)
+ - verbessertes Parsing des Subjects 
 
 #### v0.0.2
  - fix für exakte Daten
