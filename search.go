@@ -205,7 +205,9 @@ func searchMessages(firstMessage int, lastMessage int, group string) error {
 		message.group = group
 		if err := parseSubject(&message, group); err != nil {
 			// message probably did not contain a yEnc encoded file?
-			fmt.Printf("Parsing error while searching in group '%s': %v\n", group, err)
+			if verbose {
+				fmt.Printf("Parsing error while searching in group '%s': %v\n", group, err)
+			}
 		}
 		counter = counter + 1
 	}
