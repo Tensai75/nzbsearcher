@@ -49,10 +49,10 @@ func parseSubject(message *Message, group string) error {
 	if match := searchPattern.Match([]byte(message.subject)); match {
 
 		// TODO: much better parsing to better account for all the very different subjects formats used for file posts...
-		pattern1 := regexp.MustCompile(`^(?P<reminder>.+)(?:[\[\(] *(?P<segmentNo>\d+) */ *(?P<totalSegments>\d+) *[\)\]])`)
-		pattern2 := regexp.MustCompile(`^(?P<header>.*)?(?:[\[\(] *(?P<segmentNo>\d+) */ *(?P<totalSegments>\d+) *[\)\]])(?P<reminder>.*)?`)
-		pattern3 := regexp.MustCompile(`(?i)^(?P<header>.*?)?(?: *"(?P<filename>(?P<basefilename>[^"\.]*)(?:\.)?(?P<extension>.*))").*$`)
-		pattern4 := regexp.MustCompile(`(?i)(?P<filename>(?P<basefilename>[^\.]*)(?:\.)?(?P<extension>.*))`)
+		pattern1 := regexp.MustCompile(`^(?P<reminder>.+)(?:[\[\(] *(?P<segmentNo>\d+) *(?:/|of|von) *(?P<totalSegments>\d+) *[\)\]])`)
+		pattern2 := regexp.MustCompile(`^(?P<header>.*?)?(?:(?:[\[\(]|File|Datei)? *(?P<segmentNo>\d+) *(?:/|of|von) *(?P<totalSegments>\d+) *[\)\]]?)(?P<reminder>.*)?`)
+		pattern3 := regexp.MustCompile(`(?i)^(?P<header>.*?)?[- ]*"(?P<filename>(?P<basefilename>.*?)\.(?P<extension>(?:vol\d+\+\d+\.par2?|part\d+\.[^ "\.]*|[^ "\.]*\.\d+|[^ "\.]*))")`)
+		pattern4 := regexp.MustCompile(`(?i)^(?P<filename>(?P<basefilename>.*?)\.(?P<extension>(?:vol\d+\+\d+\.par2?|part\d+\.[^ "\.]*|[^ "\.]*\.\d+|[^ "\.]*))(?:[" ]|$))`)
 
 		if matches := findNamedMatches(pattern1, message.subject); matches != nil {
 			message.segmentNo, _ = strconv.Atoi(matches["segmentNo"])
@@ -65,15 +65,25 @@ func parseSubject(message *Message, group string) error {
 				reminder = matches["reminder"]
 			}
 			if matches := findNamedMatches(pattern3, reminder); matches != nil {
-				message.header = strings.TrimSpace(message.header + " " + strings.Trim(matches["header"], " -"))
-				message.filename = strings.TrimSpace(matches["filename"])
-				message.basefilename = strings.TrimSpace(matches["basefilename"])
+				if matches["header"] != "" {
+					if message.header == "" {
+						message.header = strings.Trim(matches["header"], " -")
+					} else {
+						message.header = message.header + " " + strings.Trim(matches["header"], " -")
+					}
+				}
+				message.filename = strings.Trim(matches["filename"], " -")
+				message.basefilename = strings.Trim(matches["basefilename"], " -")
 			} else if matches := findNamedMatches(pattern4, reminder); matches != nil {
-				message.filename = strings.TrimSpace(matches["filename"])
-				message.basefilename = strings.TrimSpace(matches["basefilename"])
+				message.filename = strings.Trim(matches["filename"], " -")
+				message.basefilename = strings.Trim(matches["basefilename"], " -")
 			}
-			if message.header == "" {
-				message.header = strings.TrimSpace(message.basefilename)
+			if message.basefilename != "" {
+				if message.header == "" {
+					message.header = message.basefilename
+				} else {
+					message.header = message.header + " - " + message.basefilename
+				}
 			}
 			if message.header != "" {
 				message.headerHash = GetMD5Hash(message.header + message.from + strconv.Itoa(message.totalFiles))
