@@ -48,7 +48,7 @@ func scanGroups(groupsString string) error {
 	} else {
 		groups = strings.Split(groupsString, ",")
 		for i, group := range groups {
-			groups[i] = strings.TrimSpace(group)
+			groups[i] = strings.Replace(strings.TrimSpace(group), "a.b.", "alt.binaries.", 1)
 		}
 	}
 	if len(groups) == 0 {
@@ -66,7 +66,7 @@ func readGroups(path string) error {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		groups = append(groups, scanner.Text())
+		groups = append(groups, strings.Replace(strings.TrimSpace(scanner.Text()), "a.b.", "alt.binaries.", 1))
 	}
 	return scanner.Err()
 }
