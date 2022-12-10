@@ -24,6 +24,9 @@
 
 ### Change log
 
+#### v0.0.4
+ - limit nzb filename to 255 characters
+ 
 #### v0.0.3
  - allow a.b. instead of alt.binaries.
  - show parsing erros only with verbose output (parameter: -verbose)

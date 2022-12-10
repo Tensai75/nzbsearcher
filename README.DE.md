@@ -25,6 +25,9 @@
 
 ### Änderungsprotokoll
 
+#### v0.0.4
+ - Begrenzung des NZB-Dateinamens auf 255 Zeichen
+
 #### v0.0.3
  - a.b. anstelle von alt.binaries. ist nun als Eingabe möglich
  - Anzeige von Parsing-Fehlern nur bei ausführlicher Ausgabe (Parameter: -verbose)

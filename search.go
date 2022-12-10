@@ -141,7 +141,11 @@ func saveNZB(headerMap headerMap, group string) error {
 		nzb = append(nzb, `</file>`)
 	}
 	nzb = append(nzb, `</nzb>`)
-	filepath := filepath.Join(conf.Path, sanitize.Name(headerMap.name+"_"+group+".nzb"))
+	filename := sanitize.Name(headerMap.name + "_" + group + ".nzb")
+	if len(filename) > 255 {
+		filename = filename[len(filename)-255:]
+	}
+	filepath := filepath.Join(conf.Path, filename)
 	f, err := os.Create(filepath)
 	if err != nil {
 		fmt.Printf("Error saving NZB file '%s': %v\n", filepath, err)
