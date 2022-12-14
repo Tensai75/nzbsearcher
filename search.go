@@ -141,7 +141,16 @@ func saveNZB(headerMap headerMap, group string) error {
 		nzb = append(nzb, `</file>`)
 	}
 	nzb = append(nzb, `</nzb>`)
-	filename := sanitize.Name(headerMap.name + "_" + group + ".nzb")
+	// check if nzb filename is set from nzblnk
+	var filename string
+	if conf.NzbFilename != "" {
+		filename = conf.NzbFilename
+		if len(groups) > 1 {
+			filename = strings.Replace(filename, ".nzb", "_"+group+".nzb", 1)
+		}
+	} else {
+		filename = sanitize.Name(headerMap.name + "_" + group + ".nzb")
+	}
 	if len(filename) > 255 {
 		filename = filename[len(filename)-255:]
 	}

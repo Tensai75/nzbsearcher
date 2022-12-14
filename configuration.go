@@ -23,6 +23,7 @@ type Configurations struct {
 	Step          int
 	Days          int
 	Path          string
+	NzbFilename   string
 	Verbose       bool
 }
 
