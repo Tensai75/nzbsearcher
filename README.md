@@ -24,6 +24,10 @@
 
 ### Change log
 
+#### v0.0.5
+ - added feature to parse a NZBLNK as header
+ - nzb filename gets constructed from title and password from NZBLNK
+
 #### v0.0.4
  - limit nzb filename to 255 characters
  

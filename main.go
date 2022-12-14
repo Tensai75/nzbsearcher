@@ -66,7 +66,7 @@ func init() {
 	}
 
 	// flags
-	headerFlag := flag.String("header", "", "the header to search for")
+	headerFlag := flag.String("header", "", "the header or NZBLNK to search for")
 	dateFlag := flag.String("date", "", "the date the header was posted (in the format DD.MM.YYYY)")
 	groupsFlag := flag.String("groups", conf.Groups, `the group(s) to search in (separated by commas)
 if set to an existing file, the groups listed in this file will be scanned (each group name must be on a separate line)
@@ -87,12 +87,40 @@ if set to 'BINARIES' all available alt.binaries.* groups on the usenet server wi
 	flag.Parse()
 
 	// set header
+	nzblnkRegex := regexp.MustCompile(`(?i)nzblnk:(?:[\?&]t=(?P<title>[^&]+)|[\?&]h=(?P<header>[^&]+)|[\?&]p=(?P<password>[^&]+)|[\?&]g=(?P<group>[^&]+))+`)
+	nzblnkGroupRegex := regexp.MustCompile(`(?i)g=(\w+)`)
 	for header == "" {
 		if *headerFlag != "" {
 			header = *headerFlag
 		} else {
-			fmt.Print("Enter header to search for: ")
-			header = inputReader()
+			fmt.Print("Enter header or NZBLNK to search for: ")
+			input := inputReader()
+			if match := nzblnkRegex.FindStringSubmatch(input); match != nil {
+				//parse all possible information from nzblink
+				header = match[nzblnkRegex.SubexpIndex("header")]
+				title := match[nzblnkRegex.SubexpIndex("title")]
+				password := match[nzblnkRegex.SubexpIndex("password")]
+				conf.NzbFilename = title
+				if password != "" {
+					conf.NzbFilename += "{{" + password + "}}"
+				}
+				conf.NzbFilename += ".nzb"
+				fmt.Print("Extracted header from NZBLNK: " + header + "\n")
+				fmt.Print("Generated NZB filename from NZBLNK: " + conf.NzbFilename + "\n")
+
+				// check if nzblnk contains group information
+				if grpMatch := nzblnkGroupRegex.FindAllStringSubmatch(input, -1); grpMatch != nil {
+					var groupsStr string
+					for i := range grpMatch {
+						groupsStr += ", " + grpMatch[i][1]
+					}
+					groupsStr = groupsStr[2:]
+					fmt.Print("Added group name(s) from NZBLNK: " + groupsStr + "\n")
+					scanGroups(groupsStr)
+				}
+			} else {
+				header = input
+			}
 		}
 	}
 

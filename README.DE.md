@@ -25,6 +25,10 @@
 
 ### Änderungsprotokoll
 
+#### v0.0.5
+ - Anstelle eines Headers kann jetzt auch ein NZBLNK interpretiert werden
+ - NZB Dateiname wird mit Titel und Passwort aus NZBLNK erstellt
+
 #### v0.0.4
  - Begrenzung des NZB-Dateinamens auf 255 Zeichen
 
