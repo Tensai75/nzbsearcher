@@ -37,6 +37,11 @@ Explanation of the parameters:
 ### How to use
 Run the docker container as described above. Then navigate to http://localhost:8080 with your browser to open the web interface.
 
+# Changelog
+  - added a web interface
+  - added docker capabilities
+  - added [nzblnk parser from hnz101](https://github.com/Tensai75/nzbsearcher/pull/1/commits/a3299e89d8481c98f731c13ebd0e6df08f55d064)
+  
 # Credits
 All credits go to tensai75: [Link to Repo](https://github.com/Tensai75/nzbsearcher)
 CSS theme source: https://codepen.io/Godex/pen/DLgQbg

@@ -34,9 +34,38 @@ func formHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "ParseForm() err: %v", err)
 		return
 	}
-	//fmt.Fprintf(w, "POST request successful")
 
-	header = r.FormValue("header")
+	// set header
+	nzblnkRegex := regexp.MustCompile(`(?i)nzblnk:(?:[\?&]t=(?P<title>[^&]+)|[\?&]h=(?P<header>[^&]+)|[\?&]p=(?P<password>[^&]+)|[\?&]g=(?P<group>[^&]+))+`)
+	nzblnkGroupRegex := regexp.MustCompile(`(?i)g=(\w+)`)
+	h_input := r.FormValue("header")
+	if match := nzblnkRegex.FindStringSubmatch(h_input); match != nil {
+		//parse all possible information from nzblink
+		header = match[nzblnkRegex.SubexpIndex("header")]
+		title := match[nzblnkRegex.SubexpIndex("title")]
+		password := match[nzblnkRegex.SubexpIndex("password")]
+		conf.NzbFilename = title
+		if password != "" {
+			conf.NzbFilename += "{{" + password + "}}"
+		}
+		conf.NzbFilename += ".nzb"
+		fmt.Print("Extracted header from NZBLNK: " + header + "\n")
+		fmt.Print("Generated NZB filename from NZBLNK: " + conf.NzbFilename + "\n")
+
+		// check if nzblnk contains group information
+		if grpMatch := nzblnkGroupRegex.FindAllStringSubmatch(h_input, -1); grpMatch != nil {
+			var groupsStr string
+			for i := range grpMatch {
+				groupsStr += ", " + grpMatch[i][1]
+			}
+			groupsStr = groupsStr[2:]
+			fmt.Print("Added group name(s) from NZBLNK: " + groupsStr + "\n")
+			scanGroups(groupsStr)
+		}
+	} else {
+		header = h_input
+	}
+
 	scanGroups(r.FormValue("groups"))
 	var input string
 	input = strings.TrimSpace(r.FormValue("date"))
