@@ -1,11 +1,10 @@
 package main
 
 import (
-	"bufio"
-	"errors"
 	"flag"
 	"fmt"
-	"io"
+	"log"
+	"net/http"
 	"os"
 	"regexp"
 	"strconv"
@@ -28,6 +27,37 @@ var verbose bool
 
 func main() {
 
+}
+
+func formHandler(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		fmt.Fprintf(w, "ParseForm() err: %v", err)
+		return
+	}
+	//fmt.Fprintf(w, "POST request successful")
+
+	header = r.FormValue("header")
+	scanGroups(r.FormValue("groups"))
+	var input string
+	input = strings.TrimSpace(r.FormValue("date"))
+	if input != "" {
+		dateRegex := regexp.MustCompile(`[0-3]\d\.[0-1]\d\.(?:19|20)\d\d`)
+		if match := dateRegex.FindStringIndex(input); match != nil {
+			date, err := time.Parse("02.01.2006", input)
+			if err != nil {
+				fmt.Fprintf(w, "Error parsing date '%s': %s\n", input, err)
+			} else {
+				postDateUnix = date.Unix() + 60*60*24 // add a day for security, i.e. if it was posted befor upload was finished
+			}
+		} else {
+			fmt.Fprintf(w, "Error parsing date '%s': Date does not have correct format DD.MM.YYYY!\n", input)
+		}
+	}
+	input = strings.TrimSpace(r.FormValue("days"))
+	result, _ := strconv.Atoi(input)
+	days = result + 1
+
+	// old main
 	counter = 0
 	start := time.Now()
 
@@ -53,7 +83,7 @@ func main() {
 
 	duration := time.Since(start)
 	perSecond := float64(counter) / duration.Seconds()
-	fmt.Printf("A total of %d messages were processed in %v (%d Messages/s)\n", counter, duration, int(perSecond))
+	fmt.Fprintf(w, "A total of %d messages were processed in %v (%d Messages/s)\n", counter, duration, int(perSecond))
 
 }
 
@@ -66,15 +96,7 @@ func init() {
 	}
 
 	// flags
-	headerFlag := flag.String("header", "", "the header to search for")
-	dateFlag := flag.String("date", "", "the date the header was posted (in the format DD.MM.YYYY)")
-	groupsFlag := flag.String("groups", conf.Groups, `the group(s) to search in (separated by commas)
-if set to an existing file, the groups listed in this file will be scanned (each group name must be on a separate line)
-if set to 'ALL' all available groups on the usenet server will be scanned
-if set to 'BINARIES' all available alt.binaries.* groups on the usenet server will be scanned
-`)
 	pathFlag := flag.String("path", conf.Path, "the path where the NZB file will be saved to")
-	flag.IntVar(&conf.Days, "days", conf.Days, "the number of days to search back from the post date")
 	flag.StringVar(&conf.Server.Host, "host", conf.Server.Host, "the usenet server host name")
 	flag.IntVar(&conf.Server.Port, "port", conf.Server.Port, "the port for the usenet server")
 	flag.BoolVar(&conf.Server.SSL, "ssl", conf.Server.SSL, "connect via SSL")
@@ -85,70 +107,6 @@ if set to 'BINARIES' all available alt.binaries.* groups on the usenet server wi
 	flag.IntVar(&conf.Step, "step", conf.Step, "the number of message headers to retrieve in one header overview request")
 	flag.BoolVar(&verbose, "verbose", conf.Verbose, "show verbose output")
 	flag.Parse()
-
-	// set header
-	for header == "" {
-		if *headerFlag != "" {
-			header = *headerFlag
-		} else {
-			fmt.Print("Enter header to search for: ")
-			header = inputReader()
-		}
-	}
-
-	// set groups
-	for len(groups) == 0 {
-		var err error
-		if *groupsFlag != "" {
-			err = scanGroups(*groupsFlag)
-			*groupsFlag = ""
-		} else {
-			fmt.Print("Enter group name(s) to search in: ")
-			err = scanGroups(inputReader())
-		}
-		if err != nil {
-			fmt.Printf("Error: %v\n", err)
-		}
-	}
-
-	// set post date
-	dateRegex := regexp.MustCompile(`[0-3]\d\.[0-1]\d\.(?:19|20)\d\d`)
-	for postDateUnix == 0 {
-		var input string
-		if *dateFlag != "" {
-			input = *dateFlag
-			*dateFlag = ""
-		} else {
-			fmt.Print("Enter the date when the header was posted (DD.MM.YYYY): ")
-			input = strings.TrimSpace(inputReader())
-		}
-		if input != "" {
-			if match := dateRegex.FindStringIndex(input); match != nil {
-				date, err := time.Parse("02.01.2006", input)
-				if err != nil {
-					fmt.Printf("Error parsing date '%s': %s\n", input, err)
-				} else {
-					postDateUnix = date.Unix() + 60*60*24 // add a day for security, i.e. if it was posted befor upload was finished
-				}
-			} else {
-				fmt.Printf("Error parsing date '%s': Date does not have correct format DD.MM.YYYY!\n", input)
-			}
-		}
-	}
-
-	// set days to search
-	days = conf.Days
-	for days == 0 {
-		var input string
-		fmt.Print("Enter the amount of days to search back: ")
-		input = strings.TrimSpace(inputReader())
-		result, err := strconv.Atoi(input)
-		if err != nil {
-			fmt.Printf("Error parsing input '%s': %s\n", input, err)
-		} else {
-			days = result + 1 // add back the day which was added above for security to have full length of back search
-		}
-	}
 
 	// set path
 	var input string
@@ -171,17 +129,14 @@ if set to 'BINARIES' all available alt.binaries.* groups on the usenet server wi
 		}
 	}
 
-}
+	// fire up webserver
+	fileServer := http.FileServer(http.Dir("./static"))
+	http.Handle("/", fileServer)
+	http.HandleFunc("/index", formHandler)
 
-func inputReader() string {
-	reader := bufio.NewReader(os.Stdin)
-	input, err := reader.ReadString('\n')
-	if err != nil {
-		if errors.Is(err, io.EOF) { // prefered way by GoLang doc
-			os.Exit(0)
-		}
-		fmt.Println("An error occurred while reading input. Please try again", err)
-		return ""
+	fmt.Printf("Starting server at port 8080\n")
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		log.Fatal(err)
 	}
-	return strings.TrimSpace(input)
+
 }
