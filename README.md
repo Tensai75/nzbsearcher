@@ -22,10 +22,11 @@ docker build --tag nzbsearcher .
 
 Run the container with:
 ```
-docker run 
+docker run -d \
   --publish 8080:8080 \
   -v ./config.yml:/app/config.yml \
-  -v ./nzbdrop:/app/nzb \
+  -v ./nzbdrop:/nzb \
+  --name nzbsearcher \
   nzbsearcher
 ```
 
