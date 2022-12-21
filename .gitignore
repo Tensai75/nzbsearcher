@@ -27,3 +27,5 @@ bin
 *.txt
 *.yml
 *.zip
+
+config.yml

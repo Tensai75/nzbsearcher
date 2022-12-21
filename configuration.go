@@ -19,6 +19,7 @@ type Configurations struct {
 		Connections int
 	}
 	Groups        string
+	NzbFilename   string
 	ParallelScans int
 	Step          int
 	Days          int
