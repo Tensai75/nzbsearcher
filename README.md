@@ -33,7 +33,19 @@ docker run -d \
 Explanation of the parameters:
   - --publish 8080:8080 makes sure that you can reach the container at the given port
   - -v ./config.yml:/app/config.yml makes your configuration available to the container
-  - -v ./nzbdrop:/app/nzb links nzbsearcher with a usenet downloader
+  - -v ./nzbdrop:/nzb links nzbsearcher with a usenet downloader
+
+## Docker Compose
+Alternatively docker compose can be used.
+```
+  nzbsearcher:
+    build: https://github.com/grasshide/nzbsearcher.git#main
+    container_name: nzbsearcher
+    image: nzbsearcher
+    volumes:
+      - /path/to/config.yml:/app/config.yml
+      - /path/to/nzbdrop:/nzb
+```
 
 ### How to use
 Run the docker container as described above. Then navigate to http://localhost:8080 with your browser to open the web interface.
