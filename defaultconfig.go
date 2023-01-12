@@ -11,9 +11,9 @@ Server:
   Connections: 50
 
 # Groups to be scanned
-# Possible values: 
+# Possible values:
 # - group names separated by a comma, e.g. "alt.binaries.u-4all,alt.binaries.highspeed"
-# - path to an existing text file with each group name on a separate line, e.g. "./groups.txt" 
+# - path to an existing text file with each group name on a separate line, e.g. "./groups.txt"
 # - "ALL" -> all available groups on the usenet server will be scanned
 # - "BINARIES" -> all available alt.binaries.* groups on the usenet server will be scanned
 # If left empty or commented out, the program will ask for the group names
@@ -26,7 +26,7 @@ Path: ""
 
 # Number of days the search will go back from the date the header was posted
 # If left empty or commented out, the program will ask for the amount of days
-Days: 
+Days:
 
 # Number of groups to scan in parallel
 ParallelScans: 200

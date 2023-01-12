@@ -8,19 +8,17 @@ import (
 	"strings"
 )
 
-func scanGroups(groupsString string) error {
+const (
+	allGroups       = "ALL"
+	allBinaryGroups = "BINARIES"
+)
 
-	if _, err := os.Stat(groupsString); err == nil {
-		if verbose {
-			if verbose {
-				fmt.Printf("Reading groups file '%s'\n", groupsString)
-			}
-		}
-		err := readGroups(groupsString)
-		if err != nil {
-			fmt.Printf("Error while reading groups file '%s': %v\n", groupsString, err)
-		}
-	} else if groupsString == "BINARIES" || groupsString == "ALL" {
+var (
+	ErrNoGroups = errors.New("no groups found")
+)
+
+func scanGroups(groupsString string) error {
+	if groupsString == allBinaryGroups || groupsString == allGroups {
 		if verbose {
 			fmt.Println("Connecting to usenet server to get groups list")
 		}
@@ -28,22 +26,32 @@ func scanGroups(groupsString string) error {
 		defer DisconnectNNTP(conn)
 		if err != nil {
 			fmt.Printf("Error while connecting to usenet server: %v\n", err)
+			return ErrNoGroups
 		}
 		filter := ""
-		if groupsString == "BINARIES" {
+		if groupsString == allBinaryGroups {
 			filter = "alt.binaries.*"
 		}
 		groupsList, err := conn.List("ACTIVE", filter)
 		if err != nil {
 			fmt.Printf("Error while requesting list of groups: %v\n", err)
+			return ErrNoGroups
 		}
-		DisconnectNNTP(conn)
 		if verbose {
 			fmt.Println("Processing the groups")
 		}
 		for _, group := range groupsList {
 			groupData := strings.Split(string(group), " ")
 			groups = append(groups, groupData[0])
+		}
+	} else if _, err := os.Stat(groupsString); err == nil {
+		if verbose {
+			fmt.Printf("Reading groups file '%s'\n", groupsString)
+		}
+		err := readGroups(groupsString)
+		if err != nil {
+			fmt.Printf("Error while reading groups file '%s': %v\n", groupsString, err)
+			return ErrNoGroups
 		}
 	} else {
 		groups = strings.Split(groupsString, ",")
@@ -52,7 +60,7 @@ func scanGroups(groupsString string) error {
 		}
 	}
 	if len(groups) == 0 {
-		return errors.New("no groups found")
+		return ErrNoGroups
 	}
 	return nil
 }
