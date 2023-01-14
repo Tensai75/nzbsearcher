@@ -2,59 +2,52 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
 
-var counter int
+var (
+	counter   uint64
+	waitGroup sync.WaitGroup
 
-var waitGroups sync.WaitGroup
+	// search variables
+	headerToSearch string
+	groups         []string
+	postDateUnix   int64
+	days           int
 
-// search variables
-var header string
-var groups []string
-var postDateUnix int64
-var days int
-
-var verbose bool
+	verbose bool
+)
 
 func main() {
-
-	counter = 0
 	start := time.Now()
 
 	guard := make(chan struct{}, conf.ParallelScans)
 
 	for _, group := range groups {
 		guard <- struct{}{} // will block if guard channel is already filled
-		waitGroups.Add(1)
+		waitGroup.Add(1)
 		go func(group string) {
 			defer func() {
-				waitGroups.Done()
+				waitGroup.Done()
 				<-guard
 			}()
 
 			if err := search(group); err != nil {
 				fmt.Printf("Error searching in group '%s': %v\n", group, err)
 			}
-
 		}(group)
 	}
-
-	waitGroups.Wait()
+	waitGroup.Wait()
 
 	duration := time.Since(start)
 	perSecond := float64(counter) / duration.Seconds()
 	fmt.Printf("A total of %d messages were processed in %v (%d Messages/s)\n", counter, duration, int(perSecond))
-
 }
 
 func init() {
@@ -65,15 +58,20 @@ func init() {
 		os.Exit(1)
 	}
 
+	var (
+		date       string
+		groupsFlag string
+		path       string
+	)
+
 	// flags
-	headerFlag := flag.String("header", "", "the header to search for")
-	dateFlag := flag.String("date", "", "the date the header was posted (in the format DD.MM.YYYY)")
-	groupsFlag := flag.String("groups", conf.Groups, `the group(s) to search in (separated by commas)
+	flag.StringVar(&headerToSearch, "header", "", "the header to search for")
+	flag.StringVar(&date, "date", "", "the date the header was posted (in the format DD.MM.YYYY or YYYY-MM-dd)")
+	flag.StringVar(&groupsFlag, "groups", conf.Groups, `the group(s) to search in (separated by commas)
 if set to an existing file, the groups listed in this file will be scanned (each group name must be on a separate line)
 if set to 'ALL' all available groups on the usenet server will be scanned
-if set to 'BINARIES' all available alt.binaries.* groups on the usenet server will be scanned
-`)
-	pathFlag := flag.String("path", conf.Path, "the path where the NZB file will be saved to")
+if set to 'BINARIES' all available alt.binaries.* groups on the usenet server will be scanned`)
+	flag.StringVar(&path, "path", conf.Path, "the path where the NZB file will be saved to")
 	flag.IntVar(&conf.Days, "days", conf.Days, "the number of days to search back from the post date")
 	flag.StringVar(&conf.Server.Host, "host", conf.Server.Host, "the usenet server host name")
 	flag.IntVar(&conf.Server.Port, "port", conf.Server.Port, "the port for the usenet server")
@@ -86,22 +84,17 @@ if set to 'BINARIES' all available alt.binaries.* groups on the usenet server wi
 	flag.BoolVar(&verbose, "verbose", conf.Verbose, "show verbose output")
 	flag.Parse()
 
-	// set header
-	for header == "" {
-		if *headerFlag != "" {
-			header = *headerFlag
-		} else {
-			fmt.Print("Enter header to search for: ")
-			header = inputReader()
-		}
+	// force user to enter header if not already done
+	for headerToSearch == "" {
+		fmt.Print("Enter header to search for: ")
+		headerToSearch = inputReader()
 	}
 
-	// set groups
+	// force user to input groups if not already done
 	for len(groups) == 0 {
 		var err error
-		if *groupsFlag != "" {
-			err = scanGroups(*groupsFlag)
-			*groupsFlag = ""
+		if groupsFlag != "" {
+			err = scanGroups(groupsFlag)
 		} else {
 			fmt.Print("Enter group name(s) to search in: ")
 			err = scanGroups(inputReader())
@@ -111,32 +104,25 @@ if set to 'BINARIES' all available alt.binaries.* groups on the usenet server wi
 		}
 	}
 
-	// set post date
-	dateRegex := regexp.MustCompile(`[0-3]\d\.[0-1]\d\.(?:19|20)\d\d`)
-	for postDateUnix == 0 {
-		var input string
-		if *dateFlag != "" {
-			input = *dateFlag
-			*dateFlag = ""
-		} else {
-			fmt.Print("Enter the date when the header was posted (DD.MM.YYYY): ")
-			input = strings.TrimSpace(inputReader())
+	// force user to input date if not already done
+	for {
+		if date == "" {
+			fmt.Print("Enter the date when the header was posted (DD.MM.YYYY or YYYY-MM-dd): ")
+			date = strings.TrimSpace(inputReader())
 		}
-		if input != "" {
-			if match := dateRegex.FindStringIndex(input); match != nil {
-				date, err := time.Parse("02.01.2006", input)
-				if err != nil {
-					fmt.Printf("Error parsing date '%s': %s\n", input, err)
-				} else {
-					postDateUnix = date.Unix() + 60*60*24 // add a day for security, i.e. if it was posted befor upload was finished
-				}
-			} else {
-				fmt.Printf("Error parsing date '%s': Date does not have correct format DD.MM.YYYY!\n", input)
+		d, err := time.Parse("02.01.2006", date)
+		if err != nil {
+			d, err = time.Parse("2006-01-02", date)
+			if err != nil {
+				fmt.Printf("Error parsing date '%s': %s\n", date, err)
+				continue
 			}
 		}
+		postDateUnix = d.Add(24 * time.Hour).Unix() // add a day for security, i.e. if it was posted before upload was finished
+		break
 	}
 
-	// set days to search
+	// force user to enter search range
 	days = conf.Days
 	for days == 0 {
 		var input string
@@ -151,37 +137,24 @@ if set to 'BINARIES' all available alt.binaries.* groups on the usenet server wi
 	}
 
 	// set path
-	var input string
-	for input == "" {
-		var err error
-		if *pathFlag != "" {
-			input = *pathFlag
-			*pathFlag = ""
-		} else {
-			input = "./"
-		}
-		if _, err = os.Stat(input); err == nil {
-			if verbose {
-				fmt.Printf("Setting path for NZB files to: %s\n", input)
-			}
-			conf.Path = input
-		} else if err != nil {
-			fmt.Printf("Error for path '%s': %v\n", input, err)
-			input = ""
-		}
+	if path == "" {
+		path = "./"
 	}
-
+	if _, err := os.Stat(path); err != nil {
+		fmt.Printf("Error for path '%s': %v\n", path, err)
+		os.Exit(1)
+	}
+	if verbose {
+		fmt.Printf("Setting path for NZB files to: %s\n", path)
+	}
+	conf.Path = path
 }
 
 func inputReader() string {
-	reader := bufio.NewReader(os.Stdin)
-	input, err := reader.ReadString('\n')
-	if err != nil {
-		if errors.Is(err, io.EOF) { // prefered way by GoLang doc
-			os.Exit(0)
-		}
-		fmt.Println("An error occurred while reading input. Please try again", err)
-		return ""
+	reader := bufio.NewScanner(os.Stdin)
+	for reader.Scan() {
+		return strings.TrimSpace(reader.Text())
 	}
-	return strings.TrimSpace(input)
+	fmt.Printf("Error reading data: %v\n", reader.Err())
+	return ""
 }

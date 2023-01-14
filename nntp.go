@@ -3,18 +3,20 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"sync"
 
 	"github.com/Tensai75/nntp"
 )
 
-var connectionGuard chan struct{}
-
-var connections = 0
+var (
+	connectionGuard chan struct{}
+	connectionOnce  sync.Once
+)
 
 func ConnectNNTP() (*nntp.Conn, error) {
-	if connectionGuard == nil {
+	connectionOnce.Do(func() {
 		connectionGuard = make(chan struct{}, conf.Server.Connections)
-	}
+	})
 	connectionGuard <- struct{}{} // will block if guard channel is already filled
 	var conn *nntp.Conn
 	var err error
